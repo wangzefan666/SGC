@@ -4,18 +4,20 @@ from torch.nn import Module
 import torch.nn.functional as F
 import math
 
+
 class SGC(nn.Module):
     """
     A Simple PyTorch Implementation of Logistic Regression.
     Assuming the features have been preprocessed with k-step graph propagation.
     """
+
     def __init__(self, nfeat, nclass):
         super(SGC, self).__init__()
-
         self.W = nn.Linear(nfeat, nclass)
 
     def forward(self, x):
         return self.W(x)
+
 
 class GraphConvolution(Module):
     """
@@ -35,12 +37,15 @@ class GraphConvolution(Module):
 
     def forward(self, input, adj):
         support = self.W(input)
-        output = torch.spmm(adj, support)
+        output = torch.sparse.mm(adj, support)
+        return output
+
 
 class GCN(nn.Module):
     """
     A Two-layer GCN.
     """
+
     def __init__(self, nfeat, nhid, nclass, dropout):
         super(GCN, self).__init__()
 
@@ -56,17 +61,25 @@ class GCN(nn.Module):
         x = self.gc2(x, adj)
         return x
 
+
 def get_model(model_opt, nfeat, nclass, nhid=0, dropout=0, cuda=True):
+    """
+    返回目标模型
+
+    input:
+        model_opt - 模型名
+        nfeat - 节点特征维度
+        nclass - 类别数目
+        nhidden - 隐藏层维度 or embedding维度
+        dropout - dropout rate
+    """
     if model_opt == "GCN":
-        model = GCN(nfeat=nfeat,
-                    nhid=nhid,
-                    nclass=nclass,
-                    dropout=dropout)
+        model = GCN(nfeat=nfeat, nhid=nhid, nclass=nclass, dropout=dropout)
     elif model_opt == "SGC":
-        model = SGC(nfeat=nfeat,
-                    nclass=nclass)
+        model = SGC(nfeat=nfeat, nclass=nclass)
     else:
         raise NotImplementedError('model:{} is not implemented!'.format(model_opt))
 
-    if cuda: model.cuda()
+    if cuda:
+        model.cuda()
     return model
